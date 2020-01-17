@@ -41,6 +41,87 @@ z_penta = [[1, 1, 0],
            [0, 1, 0],
            [0, 1, 1]]
 
+class Grid:
+    def __init__(self,rep):
+        #rep is the 2d list representation
+        self.rep = copy(rep)
+        self.w = len(rep[0]) #width
+        self.h = len(rep) #height
+    
+    def label(self,empty,emptychar,fullchar): #DESTRUCTIVE
+        #empty is the list of values that are considered "empty"
+        #emptychar is the character to put in empty cells
+        #fullchar is the character to put in non-empty cells
+        for r in range(self.h):
+            for c in range(self.w):
+                if self.rep[r][c] in empty:
+                    self.rep[r][c] = emptychar
+                else:
+                    self.rep[r][c] = fullchar
+
+    def rotate(self): #rotate clockwise 90 degrees
+        rotated = []
+        for c in range(self.w):
+            newrow = []
+            for r in range(self.h):
+                newrow.append(self.rep[self.h-r-1][c])
+            rotated.append(newrow)
+        return Grid(rotated)
+    
+    def reflectx(self): #horizontal reflection
+        reflected = list(map(lambda x: x[::-1],self.rep))
+        return Grid(reflected)
+
+    def reflecty(self): #vertical reflection 
+        return Grid(self.rep[::-1])
+    
+    def pad(self,left,top,width,height):
+        padded = []
+        for r in range(height):
+            if r < top or r >= self.h + top:
+                padded.append(["."] * width)
+            else:
+                row = ["."] * left
+                row += self.rep[r-top]
+                row += ["."] * (width - self.w - left)
+                padded.append(row)
+        return Grid(padded)
+    
+    def merge(self,other):
+        #force same dimensions
+        assert((self.w, self.h) == (other.w, other.h))
+
+        merged = []
+        for r in range(self.h):
+            newrow = []
+            for c in range(self.w):
+                if self.rep[r][c] != ".":
+                    newrow.append(self.rep[r][c])
+                else:
+                    newrow.append(other.rep[r][c])
+            merged.append(newrow)
+        return Grid(merged)
+
+    def collides(self,other):
+        #force same dimensions
+        assert((self.w, self.h) == (other.w, other.h))
+
+        for r in range(self.h):
+            for c in range(self.w):
+                if (self.rep[r][c] != ".") and (other.rep[r][c] != "."):
+                    return True
+        return False
+
+    def __repr__(self):
+        if self.rep == None:
+            return "Invalid grid."
+        result = ""
+        for row in self.rep:
+            row = list(map(str,row)) #in case grid items aren't strings
+            result += " ".join(row) + "\n"
+        return result[:-1]
+
+### DEPRECATED DUE TO CLASS IMPLEMENTATION ###
 def grid_rotate(grid):
     w = len(grid[0]) #new grid height
     h = len(grid) #new grid width
@@ -55,12 +136,43 @@ def grid_rotate(grid):
 def grid_reflect(grid):
     return grid[::-1] #vertical reflection is easier to write
 
-def grid_print(grid):
-    if grid == None:
-        print("Invalid grid.")
-        return
-    for row in grid:
-        print(" ".join(row))
+def grid_pad(grid,left,top,width,height):
+    curr_width = len(grid[0])
+    curr_height = len(grid)
+
+    new = []
+    for r in range(height):
+        if r < top or r >= curr_height + top:
+            new.append([0] * width)
+        else:
+            row = [0] * left
+            row += grid[r-top]
+            row += [0] * (width - curr_width - left)
+            new.append(row)
+    return new
+
+def grid_merge(g1,g2):
+    #assume same dimensions
+    new = []
+    for r in range(len(g1)):
+        newrow = []
+        for c in range(len(g1[0])):
+            if g1[r][c] != ".":
+                newrow.append(g1[r][c])
+            else:
+                newrow.append(g2[r][c])
+        new.append(newrow)
+    return new
+
+def checkCollision(g1,g2):
+    #assume same dimensions
+    for r in range(len(g1)):
+        for c in range(len(g1[0])):
+            if (g1[r][c] != ".") and (g2[r][c] != "."):
+                return True
+    return False
+
+######
 
 def allOrientations(penta):
     found = []
@@ -81,21 +193,6 @@ def allOrientations(penta):
         current = grid_rotate(current)
 
     return found
-
-def grid_pad(grid,left,top,width,height):
-    curr_width = len(grid[0])
-    curr_height = len(grid)
-
-    new = []
-    for r in range(height):
-        if r < top or r >= curr_height + top:
-            new.append([0] * width)
-        else:
-            row = [0] * left
-            row += grid[r-top]
-            row += [0] * (width - curr_width - left)
-            new.append(row)
-    return new
 
 def allPositions(penta,width,height):
     found = []
@@ -132,27 +229,6 @@ def dictionarySetup():
             modifiedPositions.append(newgrid)
 
         pentaPositions[penta_letters[i]] = modifiedPositions
-
-def checkCollision(g1,g2):
-    #assume same dimensions
-    for r in range(len(g1)):
-        for c in range(len(g1[0])):
-            if (g1[r][c] != ".") and (g2[r][c] != "."):
-                return True
-    return False
-
-def grid_merge(g1,g2):
-    #assume same dimensions
-    new = []
-    for r in range(len(g1)):
-        newrow = []
-        for c in range(len(g1[0])):
-            if g1[r][c] != ".":
-                newrow.append(g1[r][c])
-            else:
-                newrow.append(g2[r][c])
-        new.append(newrow)
-    return new
 
 def tryFit(grid,pentas):
     '''input()
